@@ -148,11 +148,11 @@ DANYA_TEXTS = {
 
 
 @register(
-    "astrbot_plugin_giftoolboxdania",
+    "astrbot_plugin_giftoolbox_dania",
     "Anonymous",
     "达妮娅图片处理：GIF/APNG/WebP 裁剪·合成·分解·变速(倍速&帧率,支持>50fps抽帧)·倒放·表情包做旧·本地转线稿·多图合成，集成《鸣潮》达妮娅(娅娅)风格文案与别名指令",
     "1.0.0",
-    "https://github.com/xiaoxi2760/astrbot_plugin_giftoolboxdania",
+    "https://github.com/xiaoxi2760/astrbot_plugin_giftoolbox_dania",
 )
 class SpriteToGifPlugin(Star):
     def __init__(self, context: Context, config: dict = None):
@@ -164,7 +164,7 @@ class SpriteToGifPlugin(Star):
         self.danya_name = danya_name if isinstance(danya_name, str) and danya_name.strip() else '娅娅'
 
         if imageio is None:
-            logger.warning("插件[astrbot_plugin_giftoolboxdania]检测到缺少 imageio 库。请运行 pip install imageio[ffmpeg]")
+            logger.warning("插件[astrbot_plugin_giftoolbox_dania]检测到缺少 imageio 库。请运行 pip install imageio[ffmpeg]")
 
     # --- 达妮娅(娅娅)文案中心 ---
     def _danya(self, key: str, **kw) -> str:
