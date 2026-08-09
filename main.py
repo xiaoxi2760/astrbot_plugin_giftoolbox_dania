@@ -197,6 +197,27 @@ class SpriteToGifPlugin(Star):
         if not sent:
             yield event.chain_result(components)
 
+    async def _emit_result_auto(self, event: AstrMessageEvent, text: str, image_bytes: bytes, stop: bool = False, split_mb: float = None):
+        """
+        结果发送（文本+图片）：
+        - 图片体积 <= split_mb（默认 1MB，可用配置 result_split_mb 覆盖）时，按老方案一条消息（文本+图片）；
+        - 超过阈值时拆分：先纯文本一条，再纯图片一条。
+        原因：QQ 对图文混排里的较大 GIF 会按普通图片处理，导致动图被转成静态图；
+        纯图片消息则能保留动画。小图混排通常无碍。
+        """
+        if split_mb is None:
+            split_mb = float(self.cfg.get('result_split_mb', 1.0))
+        size_mb = len(image_bytes) / 1024.0 / 1024.0
+        if size_mb <= split_mb:
+            async for r in self._emit_chain_auto(event, [Comp.Plain(text), Comp.Image.fromBytes(image_bytes)], stop=stop):
+                yield r
+            return
+        # 大图：拆分，先文本后纯图片
+        if not await self._emit_text(event, text, stop=False):
+            yield event.plain_result(text)
+        async for r in self._emit_chain_auto(event, [Comp.Image.fromBytes(image_bytes)], stop=stop):
+            yield r
+
     # --- 平台检测 & 统一回复（QQ Official 绕过 ResultDecorateStage）---
     def _is_qqofficial(self, event: AstrMessageEvent) -> bool:
         """检测当前消息是否来自 QQ Official 平台"""
@@ -602,10 +623,7 @@ class SpriteToGifPlugin(Star):
         result_bytes = await asyncio.to_thread(self._worker_local_line_art, img_bytes)
 
         if result_bytes:
-            async for r in self._emit_chain_auto(event, [
-                Comp.Plain(self._danya("lineart_ok")),
-                Comp.Image.fromBytes(result_bytes)
-            ], stop=True):
+            async for r in self._emit_result_auto(event, self._danya("lineart_ok"), result_bytes, stop=True):
                 yield r
         else:
             async for r in self._emit_text_auto(event, "lineart_fail", stop=True):
@@ -669,7 +687,7 @@ class SpriteToGifPlugin(Star):
             result_msg, gif_bytes = await asyncio.to_thread(self._worker_video_to_gif_wrapper, tmp_path, params)
             if is_temp_file and os.path.exists(tmp_path): os.remove(tmp_path)
             if gif_bytes:
-                async for r in self._emit_chain_auto(event, [Comp.Plain(result_msg), Comp.Image.fromBytes(gif_bytes.getvalue())], stop=True):
+                async for r in self._emit_result_auto(event, result_msg, gif_bytes.getvalue(), stop=True):
                     yield r
             else:
                 if not await self._emit_text(event, result_msg, stop=True):
@@ -761,7 +779,7 @@ class SpriteToGifPlugin(Star):
         func = self.process_mode_1 if algorithm_mode == 1 else self.process_mode_2
         res_msg, gif_bytes = await asyncio.to_thread(func, img_data, rows, cols, duration)
         if gif_bytes:
-            async for r in self._emit_chain_auto(event, [Comp.Plain(res_msg + crop_msg), Comp.Image.fromBytes(gif_bytes.getvalue())], stop=True):
+            async for r in self._emit_result_auto(event, res_msg + crop_msg, gif_bytes.getvalue(), stop=True):
                 yield r
         else:
             async for r in self._emit_text_auto(event, "make_fail", info=res_msg, stop=True):
@@ -870,10 +888,7 @@ class SpriteToGifPlugin(Star):
         )
 
         if gif_bytes:
-            async for r in self._emit_chain_auto(event, [
-                Comp.Plain(res_msg),
-                Comp.Image.fromBytes(gif_bytes.getvalue())
-            ], stop=True):
+            async for r in self._emit_result_auto(event, res_msg, gif_bytes.getvalue(), stop=True):
                 yield r
         else:
             # 失败时 res_msg 已经由 process_speed_v2 用 _danya 渲染好风格短语
@@ -1200,7 +1215,7 @@ class SpriteToGifPlugin(Star):
             return
         res_msg, gif_bytes = await asyncio.to_thread(self._worker_reverse_gif, img_data)
         if gif_bytes:
-            async for r in self._emit_chain_auto(event, [Comp.Plain(res_msg), Comp.Image.fromBytes(gif_bytes.getvalue())], stop=True):
+            async for r in self._emit_result_auto(event, res_msg, gif_bytes.getvalue(), stop=True):
                 yield r
         else:
             async for r in self._emit_text_auto(event, "reverse_fail_info", info=res_msg, stop=True):
@@ -1538,10 +1553,7 @@ class SpriteToGifPlugin(Star):
         )
 
         if result_bytes:
-            async for r in self._emit_chain_auto(event, [
-                Comp.Plain(f"{res_msg}\n{self._danya('age_done_hint', level=level)}"),
-                Comp.Image.fromBytes(result_bytes)
-            ], stop=True):
+            async for r in self._emit_result_auto(event, f"{res_msg}\n{self._danya('age_done_hint', level=level)}", result_bytes, stop=True):
                 yield r
         else:
             if not await self._emit_text(event, res_msg, stop=True):
@@ -1604,10 +1616,7 @@ class SpriteToGifPlugin(Star):
         res_msg, gif_io = await asyncio.to_thread(self._worker_multi_image_gif, valid_bytes, duration)
 
         if gif_io:
-            async for r in self._emit_chain_auto(event, [
-                Comp.Plain(self._danya("multi_done", n=len(valid_bytes)) + "\n" + self._danya("multi_canvas_hint") + "\n" + res_msg),
-                Comp.Image.fromBytes(gif_io.getvalue())
-            ], stop=True):
+            async for r in self._emit_result_auto(event, self._danya("multi_done", n=len(valid_bytes)) + "\n" + self._danya("multi_canvas_hint") + "\n" + res_msg, gif_io.getvalue(), stop=True):
                 yield r
         else:
             if not await self._emit_text(event, res_msg, stop=True):
