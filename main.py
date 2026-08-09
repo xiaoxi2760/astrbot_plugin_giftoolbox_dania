@@ -19,22 +19,22 @@ except ImportError:
 
 
 # --- 达妮娅(娅娅)风格化文案表 ---
-# key -> 默认文案模板。模板支持 {nick} 自定义昵称、{factor}/{fps}/{n}/{t}/{level}/{fmt} 等占位符。
+# key -> 默认文案模板。昵称已固定为 娅娅（专属改版，不做配置）；支持 {factor}/{fps}/{n}/{t}/{level}/{fmt} 等占位符。
 # 不开启 danya_style 时，_danya() 会回退到 *_raw 兜底（若未提供则原样返回 key）。
 DANYA_TEXTS = {
     # 通用
-    "need_image":          "咦？我没看到图呀～发张图过来，或者回复一张图，{nick}这就帮你看看～",
-    "need_gif":            "咦？我看不到动图呀～发个GIF或者回复一个给{nick}吧～",
+    "need_image":          "咦？我没看到图呀～发张图过来，或者回复一张图，娅娅这就帮你看看～",
+    "need_gif":            "咦？我看不到动图呀～发个GIF或者回复一个给娅娅吧～",
     "need_gif_help":       "咦？我看不到动图呀～发个GIF或者回复一个吧～\n用法：gif变速 2x（倍速）/ 30fps（帧率）",
     "need_video":          "咦？没看到视频呢～回复一个视频消息，或者把视频链接发给我吧～",
     "image_dl_fail":       "啊……图片没拿到呢。要不，忘掉它，再试一次？",
     "video_dl_fail":       "啊……没拿到呢。要不，忘掉它，再试一次？",
-    "video_too_big":       "诶呀，视频太丰满了～泡泡装不下，换个小一点的再来吧？",
-    "video_resolve_fail":  "这个地址我读不懂呢：{src}　要不换个方式给{nick}？",
+    "video_too_big":       "诶呀，视频太大了～泡泡装不下，换个小一点的再来吧？",
+    "video_resolve_fail":  "这个地址我读不懂呢：{src}　要不换个方式给娅娅？",
     "video_internal_err":  "唔……内部出小差了：{err}",
-    "video_start_overflow":  "开始时间超出范围啦，{nick}没法从这里截起～",
+    "video_start_overflow":  "开始时间超出范围啦，娅娅没法从这里截起～",
     "video_no_frames":      "咦……一帧也没抽到呢，要不要换个区间？",
-    "video_format_unsupport": "❌ 服务器还没有装好 imageio 呢，{nick}暂时没法用这个～",
+    "video_format_unsupport": "❌ 服务器还没有装好 imageio 呢，娅娅暂时没法用这个～",
     "proc_err":            "啊……处理出错了：{err}",
 
     # 线稿
@@ -44,12 +44,12 @@ DANYA_TEXTS = {
     "lineart_fail":        "唔……转不动呢，这图是不是有点特别？",
 
     # 视频
-    "video_requesting":   "让{nick}找找它的地址……稍等一下～",
+    "video_requesting":   "让娅娅找找它的地址……稍等一下～",
     "video_accepting":     "收到啦～交给我吧。先去打个盹也行哦♪\n区间：{range}　缩放：{scale}\n格式：{fmt}",
     "video_too_long_warn": "(限时{s}s)",   # 内部插入到msg；保留极简，避免破坏 info 结构
     "video_truncate_warn": "[帧多，悄悄抽]",
     "video_convert_ok":    "✅ 转换成功",
-    "video_transmute_big": "⚠️ 初次体积{sz}MB有点丰满了……{nick}帮它泡泡裹紧一点～\n",
+    "video_transmute_big": "⚠️ 初次体积{sz}MB有点大了……娅娅帮它泡泡裹紧一点～\n",
     "video_compress_fail": "⚠️ 瘦身失败啦({sz}MB)，那就给你原味那版～\n",
 
     # 变速
@@ -61,7 +61,7 @@ DANYA_TEXTS = {
     "speed_done_plain":    "搞定啦～{factor}x | 原 {src:.1f}fps → 等效 {dst:.1f}fps",
     "speed_done_fps_mode": "搞定啦～目标 {dst:.0f}fps | 原 {src:.1f}fps",
     "speed_done_dropframes": "帧太多装不下了，我帮你悄悄抽掉一些～（抽到{kept}/{total}帧）",
-    "speed_not_anim":      "它不会动呢……不动的东西，{nick}也变不出花样～",
+    "speed_not_anim":      "它不会动呢……不动的东西，娅娅也变不出花样～",
     "speed_no_frames":     "嗯？没有有效帧呢……要不换一张再试？",
     "speed_speed_err":     "唔……{err}",
     "speed_fail":         "啊……变速失败：{info}",
@@ -69,7 +69,7 @@ DANYA_TEXTS = {
 
     # 倒放
     "reverse_proc":        "倒带一下……有些事，倒回去看会比较幸福吗？",
-    "reverse_done":        "倒着走完了。{n}帧，{t}s——其实，{nick}都记住了。",
+    "reverse_done":        "倒着走完了。{n}帧，{t}s——其实，娅娅都记住了。",
     "reverse_not_anim":    "它不会动呢，倒过来，也还是不动呀～",
     "reverse_too_short":  "才一帧？这就没必要倒带啦～",
     "reverse_fail":        "诶……倒不了：{err}",
@@ -85,14 +85,14 @@ DANYA_TEXTS = {
     # 裁剪
     "crop_too_many":      "格子太密啦，娅娅数不过来～",
     "crop_fail":          "切不开呢……{err}",
-    "crop_no_image":      "咦？没看到图呀～发张图给{nick}吧～",
+    "crop_no_image":      "咦？没看到图呀～发张图给娅娅吧～",
     "crop_proc":          "正在切哦……样大小整齐的格子～",
     "crop_image_too_small": "❌ 图太小啦，切不开呢 {crop}",
     "too_small_grid":     "格子太小啦，{w}×{h} 装不下呢～",
 
 
     # 合成精灵图
-    "make_proc_mode":     "尝尝{nick}的合成泡泡～算法{mode}，{r}×{c} 每帧 {dur}s",
+    "make_proc_mode":     "尝尝娅娅的合成泡泡～算法{mode}，{r}×{c} 每帧 {dur}s",
     "make_ok_1":          "拼好啦～算法1 | {w}×{h} | {r}行{c}列",
     "make_ok_1_raw":      "✅ 合成成功\n算法1 | {w}x{h} | {r}行{c}列",
     "make_ok_2":          "拼好啦～算法2(透明+抖动优化) | {w}×{h} | {r}行{c}列",
@@ -106,15 +106,15 @@ DANYA_TEXTS = {
     # 多图合成
     "multi_collecting":   "正在收集泡泡～一张张捞起来……",
     "multi_dl_proc":      "{n} 张都拿到啦，捞起来正在拼，每帧 {dur}s～",
-    "multi_need_more":    "图太少了呀～至少要回复几张图给{nick}哦（合并转发也行）",
+    "multi_need_more":    "图太少了呀～至少要回复几张图给娅娅哦（合并转发也行）",
     "multi_dl_fail":      "啊……图都下载失败了，要不换个方式再试？",
-    "multi_done":         "好啦～拼好了，{n} 张图{nick}都装进泡泡里啦♪",
+    "multi_done":         "好啦～拼好了，{n} 张图娅娅都装进泡泡里啦♪",
     "multi_canvas_hint":  "画布自适应，居中填充，温柔对待每张图～",
     "multi_ok":           "✅ 合成成功 ({n}张)",
     "multi_fail":         "诶……拼不起来：{err}",
 
     # 表情包做旧
-    "age_no_image":       "咦？没看到图呀～做旧要先发图给{nick}哦（合并转发也可以）\n用法：表情包做旧 次数（建议 1~20）",
+    "age_no_image":       "咦？没看到图呀～做旧要先发图给娅娅哦（合并转发也可以）\n用法：表情包做旧 次数（建议 1~20）",
     "age_level_light":   "轻轻地做旧一点点～",
     "age_level_mid":     "明显地旧了些～它会静静看着别人，于是也泛起绿意",
     "age_level_heavy":   "变成真正的老照片了呢……有些事情，旧一点反而显得温柔",
@@ -127,29 +127,32 @@ DANYA_TEXTS = {
     "age_anim_read_err": "动图帧读不出来呢……",
 
     # 表情帮助
-    "help_expression":    "📦 表情包小课堂～（{nick}来教你）\n\n"
-                          "1️⃣ 表情包做旧：把图/动图做成「老照片」风格\n"
-                          "    指令：表情包做旧 [次数]（建议 1~20）\n"
-                          "    别名：yy做旧 / 娅娅做旧 / 娅娅把它做古\n\n"
-                          "2️⃣ 多图合成gif：把多张图拼成动图表情包\n"
-                          "    指令：多图合成gif [每帧秒数]（如 0.5）\n"
-                          "    别名：yy多图合成gif / 娅娅多图合成\n\n"
-                          "3️⃣ 精灵图合成：一张大图按网格切成动图\n"
-                          "    指令：合成1gif 6x6 0.1 / 合成2gif 6x6 0.1\n"
-                          "    别名：yy合成1gif / 娅娅合成1\n\n"
-                          "4️⃣ 网格裁剪：把表情包大图切成单张\n"
-                          "    指令：裁剪 3x4\n"
-                          "    别名：yy裁剪 / 娅娅裁剪\n\n"
-                          "回复图片/动图后发指令就行啦～有不会的随时问{nick}♪",
+    "help_expression":    "📦 娅娅的图片工具箱～\n\n"
+                          "【功能】\n"
+                          "1️⃣ 变速：动图调快/调慢（倍速或帧率）\n"
+                          "2️⃣ 倒放：动图倒着播\n"
+                          "3️⃣ 分解：动图拆成一帧帧图片\n"
+                          "4️⃣ 裁剪：大图按网格切成小图\n"
+                          "5️⃣ 做旧：做成老照片风格\n"
+                          "6️⃣ 精灵图合成：大图按网格切成一串动画\n"
+                          "7️⃣ 线稿：图片转素描\n"
+                          "8️⃣ 多图合成：多张图拼成动图\n"
+                          "9️⃣ 视频转GIF：视频截段转动图\n\n"
+                          "【调用方式】\n"
+                          "· 直接发指令，或加 yy/娅娅 前缀都行\n"
+                          "· 回复图片/动图后发指令即可\n"
+                          "· 例：加速5倍 / 倒放 / 做旧 10 / 裁剪 3x4 /\n"
+                          "    合成1gif 6x6 0.1 / 多图合成gif 0.5 /\n"
+                          "    视频转gif 0s-5s",
 
 # 黑化彩蛋（_worker_age_meme / 倒放 / heavy 倍速抽帧时偶尔出击）
-    "dark_echo_1":       "【{nick}·鸣式】…稍微，黑化一点点也没关系吧？",
+    "dark_echo_1":       "【娅娅·鸣式】…稍微，黑化一点点也没关系吧？",
 }
 
 
 @register(
     "astrbot_plugin_giftoolbox_dania",
-    "Anonymous",
+    "xiaoxi2760",
     "达妮娅图片处理：GIF/APNG/WebP 裁剪·合成·分解·变速(倍速&帧率,支持>50fps抽帧)·倒放·表情包做旧·本地转线稿·多图合成，集成《鸣潮》达妮娅(娅娅)风格文案与别名指令",
     "1.0.0",
     "https://github.com/xiaoxi2760/astrbot_plugin_giftoolbox_dania",
@@ -159,9 +162,8 @@ class SpriteToGifPlugin(Star):
         super().__init__(context)
         self.cfg = config if config is not None else {}
 
-        # 达妮娅(娅娅)风格昵称
-        danya_name = self.cfg.get('danya_name', '娅娅')
-        self.danya_name = danya_name if isinstance(danya_name, str) and danya_name.strip() else '娅娅'
+        # 达妮娅(娅娅)风格昵称（本插件为娅娅专属改版，固定昵称，不做配置）
+        self.danya_name = '娅娅'
 
         if imageio is None:
             logger.warning("插件[astrbot_plugin_giftoolbox_dania]检测到缺少 imageio 库。请运行 pip install imageio[ffmpeg]")
@@ -170,7 +172,7 @@ class SpriteToGifPlugin(Star):
     def _danya(self, key: str, **kw) -> str:
         """
         从 DANYA_TEXTS 取风格化文案并渲染占位符。
-        模板内可使用 {nick}（自动替换为 self.danya_name）以及其它占位符。
+        昵称已固定为 娅娅（self.danya_name），文案内直接写'娅娅'即可。
         找不到 key 或渲染异常时，原样返回 key，绝不阻断主流程。
         """
         kw.setdefault('nick', self.danya_name)

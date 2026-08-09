@@ -1,6 +1,30 @@
-name: 达妮娅图片处理
-desc: 达妮娅图片处理：GIF/APNG/WebP 裁剪·合成·分解·变速(倍速&帧率,支持>50fps抽帧)·倒放·表情包做旧·本地转线稿·多图合成，集成《鸣潮》达妮娅(娅娅)风格文案与别名指令
-help:  # 插件的帮助信息
-version: v1.0.0 # 插件版本号。格式：v1.1.1 或者 v1.1
-author: Anonymous
+name: astrbot_plugin_giftoolbox_dania  # 插件标识符，英文，唯一
+display_name: 达妮娅图片处理             # 插件展示名称
+short_desc: GIF/APNG/WebP 图片处理工具箱，集成达妮娅(娅娅)风格文案与别名指令
+desc: |
+  达妮娅图片处理：基于 GIF 工具箱二次风格化改造的 AstrBot 插件，集成《鸣潮》达妮娅（娅娅）风格文案与别名指令。
+
+  ## 功能
+  - 变速：倍速/帧率模式，>50fps 自动抽帧
+  - 倒放 / 分解 / 裁剪
+  - 表情包做旧 / 多图合成 / 精灵图合成（合成1 / 合成2）
+  - 本地转线稿 / 视频转GIF
+  - 大体积动图自动拆分发送，避免 QQ 图文混排把动图转成静态图
+
+  ## 使用
+  - 直接发指令，或加 yy/娅娅 前缀（如：娅娅加速5倍）
+  - 回复图片/动图后再发指令
+  - 发送「表情帮助」查看完整功能列表
+version: 1.0.0
+author: xiaoxi2760
 repo: https://github.com/xiaoxi2760/astrbot_plugin_giftoolbox_dania
+astrbot_version: ">=4.17.0"
+support_platforms:
+  - aiocqhttp
+social_link: https://github.com/xiaoxi2760
+tags:
+  - gif
+  - 图片处理
+  - 表情包
+  - 达妮娅
+  - 娅娅
