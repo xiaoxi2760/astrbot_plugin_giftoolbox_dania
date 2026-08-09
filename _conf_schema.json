@@ -1,0 +1,38 @@
+{
+  "max_video_size_mb": {
+    "type": "float",
+    "description": "允许处理的视频最大体积(MB)",
+    "default": 50.0
+  },
+  "max_gif_duration": {
+    "type": "float",
+    "description": "生成的动图最大允许时长(秒)",
+    "default": 10.0
+  },
+  "default_scale": {
+    "type": "float",
+    "description": "默认缩放比例(0.1-1.0)",
+    "default": 0.3
+  },
+  "default_fps": {
+    "type": "int",
+    "description": "默认帧率",
+    "default": 10
+  },
+  "gif_max_colors": {
+    "type": "int",
+    "description": "GIF最大颜色数量(2-256)，仅在输出格式为GIF时生效",
+    "default": 256
+  },
+  "output_format": {
+    "type": "string",
+    "description": "输出格式：GIF (兼容性好), APNG (画质好透明度高), WEBP (体积最小)",
+    "enum": ["GIF", "APNG", "WEBP"],
+    "default": "GIF"
+  },
+  "danya_name": {
+    "type": "string",
+    "description": "达妮娅风格自定义昵称，默认'娅娅'",
+    "default": "娅娅"
+  }
+}
