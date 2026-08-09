@@ -126,6 +126,22 @@ DANYA_TEXTS = {
     "age_fail":          "唔……做旧失败：{err}",
     "age_anim_read_err": "动图帧读不出来呢……",
 
+    # 表情帮助
+    "help_expression":    "📦 表情包小课堂～（{nick}来教你）\n\n"
+                          "1️⃣ 表情包做旧：把图/动图做成「老照片」风格\n"
+                          "    指令：表情包做旧 [次数]（建议 1~20）\n"
+                          "    别名：yy做旧 / 娅娅做旧 / 娅娅把它做古\n\n"
+                          "2️⃣ 多图合成gif：把多张图拼成动图表情包\n"
+                          "    指令：多图合成gif [每帧秒数]（如 0.5）\n"
+                          "    别名：yy多图合成gif / 娅娅多图合成\n\n"
+                          "3️⃣ 精灵图合成：一张大图按网格切成动图\n"
+                          "    指令：合成1gif 6x6 0.1 / 合成2gif 6x6 0.1\n"
+                          "    别名：yy合成1gif / 娅娅合成1\n\n"
+                          "4️⃣ 网格裁剪：把表情包大图切成单张\n"
+                          "    指令：裁剪 3x4\n"
+                          "    别名：yy裁剪 / 娅娅裁剪\n\n"
+                          "回复图片/动图后发指令就行啦～有不会的随时问{nick}♪",
+
 # 黑化彩蛋（_worker_age_meme / 倒放 / heavy 倍速抽帧时偶尔出击）
     "dark_echo_1":       "【{nick}·鸣式】…稍微，黑化一点点也没关系吧？",
 }
@@ -1597,6 +1613,14 @@ class SpriteToGifPlugin(Star):
             if not await self._emit_text(event, res_msg, stop=True):
                 yield event.plain_result(res_msg)
 
+    # --- 表情包帮助 ---
+    @filter.regex(r"^表情包?帮助\s*$")
+    async def expression_help(self, event: AstrMessageEvent):
+        """表情包相关指令帮助：做旧 / 多图合成 / 精灵图合成 / 裁剪。"""
+        async for r in self._emit_text_auto(event, "help_expression", stop=True):
+            yield r
+
+
     # --- 达妮娅(娅娅/yy/danya)风格别名分发 ---
     # 用法示例:
     #   yy加速 5 / 娅娅加速 5 / yy冲 5
@@ -1611,11 +1635,11 @@ class SpriteToGifPlugin(Star):
     #   yy合成2gif 8x8 0.05
     #   yy做旧 10 / 娅娅把它做古 10
     #   yy多图合成gif 0.5
-    @filter.regex(r"^(?:yy|娅娅|danya)\s+(\S.*)$")
+    @filter.regex(r"^(?:yy|娅娅|danya)\s*(\S.*)$")
     async def danya_alias_dispatcher(self, event: AstrMessageEvent):
         """统一处理 yy/娅娅/danya 前缀的达妮娅风格别名，路由到对应 handler。"""
         text = event.message_str.strip()
-        m = re.match(r"^(?:yy|娅娅|danya)\s+(\S.*)$", text, re.IGNORECASE)
+        m = re.match(r"^(?:yy|娅娅|danya)\s*(\S.*)$", text, re.IGNORECASE)
         if not m:
             return
         rest = m.group(1).strip()
@@ -1623,21 +1647,38 @@ class SpriteToGifPlugin(Star):
         # 按从长到短的关键字匹配命令；命中哪个就走哪个底层 handler。
         # 底层 handler 大多靠正则提取参数 (不依赖指令前缀位置)，"yy" 前缀无害。
         mapping = [
+            # 表情帮助
+            ("表情包帮助",     self.expression_help),
+            ("表情帮助",       self.expression_help),
+            # 视频/线稿
             ("视频转gif",     self.video_to_gif_cmd),
             ("图片转线稿",     self.img_to_line_art),
+            ("画线稿",        self.img_to_line_art),
+            # 合成
             ("多图合成gif",   self.multi_img_gif),
+            ("多图合成",       self.multi_img_gif),
             ("表情包做旧",     self.age_meme),
             ("合成1gif",      self.make_gif_v1),
+            ("合成1",        self.make_gif_v1),
             ("合成2gif",      self.make_gif_v2),
+            ("合成2",        self.make_gif_v2),
+            # 分解/倒放
             ("gif分解",       self.decompose_gif),
             ("gif倒放",       self.gif_reverse),
             ("gif变速",       self.gif_speed_change),
+            ("变速",          self.gif_speed_change),
             ("做旧",          self.age_meme),
+            ("做古",          self.age_meme),
             ("倒放",          self.gif_reverse_alias),
+            ("倒着走",        self.gif_reverse_alias),
             ("分解",          self.decompose_gif),
+            ("拆开",          self.decompose_gif),
             ("裁剪",          self.crop_and_forward),
+            # 变速
             ("加速",          self.accelerate_gif),
+            ("冲",            self.accelerate_gif),
             ("减速",          self.decelerate_gif),
+            ("慢",            self.decelerate_gif),
             ("变快",          self.accelerate_gif),
             ("变慢",          self.decelerate_gif),
         ]
