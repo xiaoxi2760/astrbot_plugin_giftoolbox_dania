@@ -1691,11 +1691,24 @@ class SpriteToGifPlugin(Star):
         if fn is None:
             return
 
-        # 阻止 astrbot 把同一条消息再分给其它正则别名 handler (如底层加速 regex)
+        # 注意：不能在迭代底层 handler 之前调用 event.stop_event()。
+        # AstrBot 调度器会在首个 yield（进度提示）处因 is_stopped() 提前 break，
+        # 丢弃 ProcessStage 生成器并取消底层 handler，导致 GIF 结果被静默丢失。
+        # 参考项目(astrbot_plugin_gifcaijian)没有分发器、也不预先 stop，故无此问题。
+        try:
+            async for r in fn(event):
+                yield r
+        except asyncio.CancelledError:
+            raise
+        except GeneratorExit:
+            raise
+        except Exception as e:
+            # 兜底：底层处理异常时给出明确失败提示，避免静默失败
+            async for r in self._emit_text_auto(event, "proc_err", err=e, stop=True):
+                yield r
+
+        # 全部结果发送完毕后再停止事件传播，避免同一条消息再触发其它 handler
         try:
             event.stop_event()
         except Exception:
             pass
-
-        async for r in fn(event):
-            yield r
