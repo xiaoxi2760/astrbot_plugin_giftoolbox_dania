@@ -1,4 +1,4 @@
-# GIF工具箱（达妮娅风格版）
+# 娅娅表情处理工具箱
 
 基于 [iris1598/astrbot_plugin_gifcaijian](https://github.com/iris1598/astrbot_plugin_gifcaijian) 二次风格化改造的 AstrBot 插件。
 

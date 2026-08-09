@@ -153,7 +153,7 @@ DANYA_TEXTS = {
 @register(
     "astrbot_plugin_giftoolbox_dania",
     "xiaoxi2760",
-    "达妮娅图片处理：GIF/APNG/WebP 裁剪·合成·分解·变速(倍速&帧率,支持>50fps抽帧)·倒放·表情包做旧·本地转线稿·多图合成，集成《鸣潮》达妮娅(娅娅)风格文案与别名指令",
+    "娅娅表情处理工具箱：GIF/APNG/WebP 裁剪·合成·分解·变速(倍速&帧率,支持>50fps抽帧)·倒放·表情包做旧·本地转线稿·多图合成，集成《鸣潮》达妮娅(娅娅)风格文案与别名指令",
     "1.0.0",
     "https://github.com/xiaoxi2760/astrbot_plugin_giftoolbox_dania",
 )

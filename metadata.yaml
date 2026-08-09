@@ -1,8 +1,8 @@
 name: astrbot_plugin_giftoolbox_dania  # 插件标识符，英文，唯一
-display_name: 达妮娅图片处理             # 插件展示名称
+display_name: 娅娅表情处理工具箱             # 插件展示名称
 short_desc: GIF/APNG/WebP 图片处理工具箱，集成达妮娅(娅娅)风格文案与别名指令
 desc: |
-  达妮娅图片处理：基于 GIF 工具箱二次风格化改造的 AstrBot 插件，集成《鸣潮》达妮娅（娅娅）风格文案与别名指令。
+  娅娅表情处理工具箱：基于 GIF 工具箱二次风格化改造的 AstrBot 插件，集成《鸣潮》达妮娅（娅娅）风格文案与别名指令。
 
   ## 功能
   - 变速：倍速/帧率模式，>50fps 自动抽帧
