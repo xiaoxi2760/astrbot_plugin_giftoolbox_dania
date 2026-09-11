@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""娅娅表情处理工具箱（astrbot_plugin_giftoolbox_dania）。
+
+基于 iris1598/astrbot_plugin_gifcaijian 二次风格化改造，提供 GIF/APNG/WebP 的
+裁剪·精灵图合成·分解·变速（倍速/帧率）·倒放·表情包做旧·本地转线稿·多图合成
+（支持动图按顺序拼接、沿用各段原速），并集成《鸣潮》达妮娅（娅娅）风格文案
+与 yy / 娅娅 / danya 前缀别名指令。
+
+Handler 铁律：被 @filter 装饰的 handler 必须是 async generator（含 yield）；
+全部 yield 完成前不要调用 event.stop_event()，否则最终结果会静默丢失。
+"""
 import re
 import io
 import os

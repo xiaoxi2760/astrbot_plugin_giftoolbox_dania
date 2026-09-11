@@ -1,0 +1,10 @@
+# 第三方依赖，每行一个，可带版本号。无依赖则留空。
+
+# 图像与网络基础依赖，AstrBot 运行环境通常已内置，此处显式声明以防缺漏
+Pillow
+aiohttp
+
+# 视频转动图所需；缺失时仅「视频转gif」不可用（会有日志告警），其余功能不受影响
+# 需要 ffmpeg 支持，请一并安装 imageio-ffmpeg
+imageio
+imageio-ffmpeg

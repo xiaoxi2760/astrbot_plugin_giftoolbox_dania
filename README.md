@@ -1,5 +1,7 @@
 # 娅娅表情处理工具箱
 
+<p align="center"><img src="logo.png" alt="娅娅表情处理工具箱" width="200"></p>
+
 基于 [iris1598/astrbot_plugin_gifcaijian](https://github.com/iris1598/astrbot_plugin_gifcaijian) 二次风格化改造的 AstrBot 插件。
 
 原项目提供视频转动图、精灵图合成、速度调整、网格裁剪、逐帧分解、表情包做旧等多功能 GIF 处理；本fork在此基础上集成《鸣潮》角色**达妮娅（娅娅 / Denia）**风格的提示文案与别名指令。
@@ -84,6 +86,10 @@
 - **动图拼接:** 输入里有 GIF/动图时，会把它们的每一帧都接进去，按发出的顺序连成一条，**沿用各段原本的速度**；静态图占一帧、用上面的时长参数。
 - 总帧数太多（超过 500 帧）时会自动抽掉一些，**总时长不变**。输出格式选 APNG / WEBP 时，各段速度会取平均值。
 
+## 安装
+
+将插件目录 `astrbot_plugin_giftoolbox_dania` 放入 AstrBot 的 `data/plugins/`，在管理面板「插件管理」中启用即可。
+
 ## 插件配置
 
 ```jsonc
@@ -98,6 +104,11 @@
     "danya_name": "娅娅"          // 达妮娅风格自定义昵称（影响全部回复文案；指令前缀固定为 yy / danya / 娅娅）
 }
 ```
+
+## 依赖
+
+- `Pillow`、`aiohttp`：AstrBot 运行环境通常已内置
+- `imageio`、`imageio-ffmpeg`：**仅「视频转gif」需要**，缺失时该功能不可用（日志会有提示），其余功能不受影响
 
 ## 致谢
 
