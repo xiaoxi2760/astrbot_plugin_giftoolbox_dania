@@ -6,8 +6,13 @@
   },
   "max_gif_duration": {
     "type": "float",
-    "description": "生成的动图最大允许时长(秒)",
+    "description": "允许截取视频的最大时长(秒)，超出部分会被截断",
     "default": 10.0
+  },
+  "result_split_mb": {
+    "type": "float",
+    "description": "结果动图超过该体积(MB)时拆分发送（先文本后纯图片），避免QQ图文混排把动图转成静态图",
+    "default": 1.0
   },
   "default_scale": {
     "type": "float",
@@ -32,7 +37,7 @@
   },
   "danya_name": {
     "type": "string",
-    "description": "达妮娅风格自定义昵称，默认'娅娅'",
+    "description": "达妮娅风格自定义昵称，默认'娅娅'。影响全部回复文案与转发节点名；指令前缀仍固定为 yy / danya / 娅娅",
     "default": "娅娅"
   }
 }

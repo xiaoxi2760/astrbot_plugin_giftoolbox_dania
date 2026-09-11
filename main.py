@@ -4,7 +4,6 @@ import os
 import asyncio
 import aiohttp
 import tempfile
-import urllib.parse
 from PIL import Image as PILImage, ImageSequence, ImageFilter, ImageOps, ImageEnhance
 from astrbot.api.event import filter
 from astrbot.api.all import *
@@ -19,8 +18,11 @@ except ImportError:
 
 
 # --- 达妮娅(娅娅)风格化文案表 ---
-# key -> 默认文案模板。昵称已固定为 娅娅（专属改版，不做配置）；支持 {factor}/{fps}/{n}/{t}/{level}/{fmt} 等占位符。
-# 不开启 danya_style 时，_danya() 会回退到 *_raw 兜底（若未提供则原样返回 key）。
+# key -> 默认文案模板。模板内直接写默认昵称「娅娅」；若配置了 danya_name，
+#        _danya() 会在渲染后把文案里的「娅娅」整体替换掉，不必改这几十条模板。
+#        支持 {factor}/{fps}/{n}/{t}/{level}/{fmt}/{nick} 等占位符；找不到 key 则原样返回 key。
+DANYA_NICK_DEFAULT = "娅娅"   # 默认昵称。配置 danya_name 与之不同时触发整体替换
+
 DANYA_TEXTS = {
     # 通用
     "need_image":          "咦？我没看到图呀～发张图过来，或者回复一张图，娅娅这就帮你看看～",
@@ -65,7 +67,6 @@ DANYA_TEXTS = {
     "speed_no_frames":     "嗯？没有有效帧呢……要不换一张再试？",
     "speed_speed_err":     "唔……{err}",
     "speed_fail":         "啊……变速失败：{info}",
-    "speed_help_usage":    "咦？我看不到动图呀～发个GIF或者回复一个吧～\n用法：gif变速 2x（倍速）/ 30fps（帧率）",
 
     # 倒放
     "reverse_proc":        "倒带一下……有些事，倒回去看会比较幸福吗？",
@@ -94,9 +95,7 @@ DANYA_TEXTS = {
     # 合成精灵图
     "make_proc_mode":     "尝尝娅娅的合成泡泡～算法{mode}，{r}×{c} 每帧 {dur}s",
     "make_ok_1":          "拼好啦～算法1 | {w}×{h} | {r}行{c}列",
-    "make_ok_1_raw":      "✅ 合成成功\n算法1 | {w}x{h} | {r}行{c}列",
     "make_ok_2":          "拼好啦～算法2(透明+抖动优化) | {w}×{h} | {r}行{c}列",
-    "make_ok_2_raw":      "✅ 合成成功\n算法2 | {w}x{h} | {r}行{c}列",
     "make_logic_err":     "合成里有点小乱哦：{err}",
     "make_crop_msg":      "\n✂️ 切边：上{t} 下{b} 左{l} 右{r}",
     "make_crop_invalid":  "\n⚠️ 切边设错了：{w}×{h} → {l},{u},{r},{d}",
@@ -105,12 +104,12 @@ DANYA_TEXTS = {
 
     # 多图合成
     "multi_collecting":   "正在收集泡泡～一张张捞起来……",
-    "multi_dl_proc":      "{n} 张都拿到啦，捞起来正在拼，每帧 {dur}s～",
+    "multi_dl_proc":      "{n} 张都拿到啦，捞起来正在拼～动图按顺序接起来、沿用原速，静图每帧 {dur}s",
     "multi_need_more":    "图太少了呀～至少要回复几张图给娅娅哦（合并转发也行）",
     "multi_dl_fail":      "啊……图都下载失败了，要不换个方式再试？",
     "multi_done":         "好啦～拼好了，{n} 张图娅娅都装进泡泡里啦♪",
-    "multi_canvas_hint":  "画布自适应，居中填充，温柔对待每张图～",
-    "multi_ok":           "✅ 合成成功 ({n}张)",
+    "multi_canvas_hint":  "按顺序接起来～画布自适应、居中填充，温柔对待每张图♪",
+    "multi_ok":           "✅ 合成成功（{n}张 → {f}帧，总时长约 {t:.1f}s，动图沿用原速）",
     "multi_fail":         "诶……拼不起来：{err}",
 
     # 表情包做旧
@@ -154,7 +153,7 @@ DANYA_TEXTS = {
     "astrbot_plugin_giftoolbox_dania",
     "xiaoxi2760",
     "娅娅表情处理工具箱：GIF/APNG/WebP 裁剪·合成·分解·变速(倍速&帧率,支持>50fps抽帧)·倒放·表情包做旧·本地转线稿·多图合成，集成《鸣潮》达妮娅(娅娅)风格文案与别名指令",
-    "1.0.0",
+    "1.1.0",
     "https://github.com/xiaoxi2760/astrbot_plugin_giftoolbox_dania",
 )
 class SpriteToGifPlugin(Star):
@@ -162,8 +161,9 @@ class SpriteToGifPlugin(Star):
         super().__init__(context)
         self.cfg = config if config is not None else {}
 
-        # 达妮娅(娅娅)风格昵称（本插件为娅娅专属改版，固定昵称，不做配置）
-        self.danya_name = '娅娅'
+        # 达妮娅(娅娅)风格昵称，可通过配置 danya_name 自定义，默认「娅娅」。
+        # 影响：所有面向用户的文案、转发节点名。不影响指令前缀（固定为 yy / danya / 娅娅）。
+        self.danya_name = str(self.cfg.get('danya_name') or DANYA_NICK_DEFAULT).strip() or DANYA_NICK_DEFAULT
 
         if imageio is None:
             logger.warning("插件[astrbot_plugin_giftoolbox_dania]检测到缺少 imageio 库。请运行 pip install imageio[ffmpeg]")
@@ -172,15 +172,18 @@ class SpriteToGifPlugin(Star):
     def _danya(self, key: str, **kw) -> str:
         """
         从 DANYA_TEXTS 取风格化文案并渲染占位符。
-        昵称已固定为 娅娅（self.danya_name），文案内直接写'娅娅'即可。
+        模板内直接写默认昵称「娅娅」；若配置 danya_name 改了昵称，渲染后整体替换一次。
         找不到 key 或渲染异常时，原样返回 key，绝不阻断主流程。
         """
         kw.setdefault('nick', self.danya_name)
         tpl = DANYA_TEXTS.get(key, key)
         try:
-            return tpl.format(**kw) if ('{' in tpl) else tpl
+            text = tpl.format(**kw) if ('{' in tpl) else tpl
         except Exception:
             return key
+        if self.danya_name != DANYA_NICK_DEFAULT:
+            text = text.replace(DANYA_NICK_DEFAULT, self.danya_name)
+        return text
 
     async def _emit_text_auto(self, event: AstrMessageEvent, key: str, stop: bool = False, **kw):
         """统一发送纯文本。自动处理 QQ Official 直发与 yield 回灌。作为 async generator 使用：`async for r in ...: yield r`。"""
@@ -262,19 +265,28 @@ class SpriteToGifPlugin(Star):
         return False
 
     # --- 核心工具：统一保存动画 ---
-    def _save_animation(self, output: io.BytesIO, frames: list, duration_ms: int, loop: int = 0):
+    def _save_animation(self, output: io.BytesIO, frames: list, duration_ms: int, loop: int = 0, durations: list = None):
+        """
+        统一保存动画。
+        duration_ms: 统一帧时长(ms)
+        durations:   逐帧时长列表（可选，长度需与 frames 一致）。用于多段动图拼接时保留各段原速。
+                     只有 GIF 支持逐帧时长，APNG/WEBP 退化为平均值。
+        """
         fmt = self.cfg.get('output_format', 'GIF').upper()
+        dur = duration_ms
+        if durations and len(durations) == len(frames):
+            dur = durations if fmt == 'GIF' else int(round(sum(durations) / float(len(durations))))
         if fmt == 'GIF':
-            frames[0].save(output, format='GIF', save_all=True, append_images=frames[1:], duration=duration_ms,
+            frames[0].save(output, format='GIF', save_all=True, append_images=frames[1:], duration=dur,
                            loop=loop, optimize=True, disposal=2)
         elif fmt == 'APNG':
-            frames[0].save(output, format='PNG', save_all=True, append_images=frames[1:], duration=duration_ms,
+            frames[0].save(output, format='PNG', save_all=True, append_images=frames[1:], duration=dur,
                            loop=loop, optimize=True, default_image=True)
         elif fmt == 'WEBP':
-            frames[0].save(output, format='WEBP', save_all=True, append_images=frames[1:], duration=duration_ms,
+            frames[0].save(output, format='WEBP', save_all=True, append_images=frames[1:], duration=dur,
                            loop=loop, method=3, quality=80)
         else:
-            frames[0].save(output, format='GIF', save_all=True, append_images=frames[1:], duration=duration_ms,
+            frames[0].save(output, format='GIF', save_all=True, append_images=frames[1:], duration=dur,
                            loop=loop, optimize=True, disposal=2)
 
     # --- 辅助方法: 获取单张图片URL (增强版) ---
@@ -763,7 +775,7 @@ class SpriteToGifPlugin(Star):
             try:
                 val = float(dur_match.group(1))
                 if 0 < val <= 60: duration = val
-            except:
+            except Exception:
                 pass
         img_url = self._get_image_url(event)
         if not img_url:
@@ -923,7 +935,7 @@ class SpriteToGifPlugin(Star):
 
     # 保留旧指令作为别名，内部走统一逻辑
     @filter.command("加速")
-    @filter.regex(r"^(?:gif)?(?:加速|变快)\s*[*x×]?\s*(\d+\.?\d*)?")
+    @filter.regex(r"^(?:gif)?加速\s*[*x×]?\s*(\d+\.?\d*)?")
     async def accelerate_gif(self, event: AstrMessageEvent):
         '''GIF加速 (旧指令, 等效于 /gif变速 Nx)'''
         msg = event.message_str
@@ -935,7 +947,7 @@ class SpriteToGifPlugin(Star):
             yield r
 
     @filter.command("减速")
-    @filter.regex(r"^(?:gif)?(?:减速|变慢)\s*[*x×]?\s*(\d+\.?\d*)?")
+    @filter.regex(r"^(?:gif)?减速\s*[*x×]?\s*(\d+\.?\d*)?")
     async def decelerate_gif(self, event: AstrMessageEvent):
         '''GIF减速 (旧指令, 等效于 /gif变速 Nx)'''
         msg = event.message_str
@@ -1286,70 +1298,123 @@ class SpriteToGifPlugin(Star):
         except Exception as e:
             return self._danya("reverse_fail", err=e), None
 
-    # --- 新增: 多图合成 GIF 核心处理逻辑 ---
-    def _worker_multi_image_gif(self, images_bytes: list[bytes], duration_sec: float):
+    # --- 多图合成 GIF 辅助: 取当前帧自身时长(ms) ---
+    @staticmethod
+    def _frame_duration_ms(img: PILImage.Image, default_ms: int) -> int:
+        """读当前帧原本的时长；缺失/非法时回落到 default_ms，并收敛到 [20ms, 10s]。"""
         try:
-            pil_images = []
-            max_w, max_h = 0, 0
+            d = int(img.info.get("duration", 0) or 0)
+        except Exception:
+            d = 0
+        if d <= 0:
+            d = default_ms
+        return max(20, min(d, 10000))
 
-            # 1. 加载所有图片并计算最大尺寸
+    # --- 多图合成 GIF 辅助: 等比缩放 + 居中透明填充到统一画布 ---
+    @staticmethod
+    def _fit_to_canvas(img: PILImage.Image, canvas_w: int, canvas_h: int) -> PILImage.Image:
+        bg = PILImage.new("RGBA", (canvas_w, canvas_h), (255, 255, 255, 0))
+        src_ratio = img.width / img.height
+        tgt_ratio = canvas_w / canvas_h
+        if src_ratio > tgt_ratio:
+            new_w, new_h = canvas_w, max(1, int(canvas_w / src_ratio))
+        else:
+            new_h, new_w = canvas_h, max(1, int(canvas_h * src_ratio))
+        img_resized = img.resize((new_w, new_h), PILImage.Resampling.BILINEAR)
+        bg.paste(img_resized, ((canvas_w - new_w) // 2, (canvas_h - new_h) // 2),
+                 mask=img_resized if 'A' in img_resized.getbands() else None)
+        return bg
+
+    # --- 多图合成 GIF 辅助: 帧数超限时按素材等比抽帧，被丢帧的时长并入保留帧(总时长不变) ---
+    @staticmethod
+    def _decimate_frames(durations: list, max_frames: int):
+        n = len(durations)
+        if n <= max_frames:
+            return list(range(n)), list(durations)
+        step = n / float(max_frames)
+        keep_idx, keep_dur = [], []
+        pos = 0.0
+        while int(pos) < n:
+            j = int(pos)
+            nxt = min(n, max(int(pos + step), j + 1))
+            if len(keep_idx) >= max_frames:
+                # 已达上限：把剩余帧的时长并入最后一帧，保证总时长一点不丢
+                keep_dur[-1] += sum(durations[j:n])
+                break
+            keep_idx.append(j)
+            keep_dur.append(sum(durations[j:nxt]))
+            pos += step
+        return keep_idx, keep_dur
+
+    # --- 新增: 多图合成 GIF 核心处理逻辑(支持动图按顺序拼接) ---
+    def _worker_multi_image_gif(self, images_bytes: list[bytes], duration_sec: float):
+        """
+        多图合成GIF：
+        - 静态图 -> 占 1 帧，时长取指令给的 duration_sec
+        - 动图   -> 逐帧展开后接在后面，沿用各帧原本的时长（原速）
+        所有帧统一到最大画布（等比缩放 + 居中透明填充），严格按输入顺序连接。
+        """
+        MAX_CONCAT_FRAMES = 500   # 总帧数上限，防止超长动图把内存/耗时拖爆
+        MIN_DURATION_MS = 20      # GIF 最小帧间隔 (1000ms / 50fps)
+
+        try:
+            default_ms = max(MIN_DURATION_MS, int(duration_sec * 1000))
+
+            # 1. 探测每张图的尺寸 / 帧数 / 逐帧时长，确定统一画布
+            probes = []   # [(原始bytes, 逐帧时长ms)]
+            canvas_w = canvas_h = 0
             for b in images_bytes:
                 try:
-                    img = PILImage.open(io.BytesIO(b)).convert("RGBA")
-                    # 如果是动态图，取第一帧
-                    if getattr(img, "is_animated", False):
-                        img.seek(0)
-                        img = img.copy()
-                    pil_images.append(img)
-                    max_w = max(max_w, img.width)
-                    max_h = max(max_h, img.height)
+                    with PILImage.open(io.BytesIO(b)) as im:
+                        is_anim = bool(getattr(im, "is_animated", False))
+                        canvas_w = max(canvas_w, im.width)
+                        canvas_h = max(canvas_h, im.height)
+                        if is_anim:
+                            durs = []
+                            for i in range(getattr(im, "n_frames", 1)):
+                                im.seek(i)
+                                durs.append(self._frame_duration_ms(im, default_ms))
+                        else:
+                            durs = [default_ms]
+                        probes.append((b, durs))
                 except Exception as e:
-                    logger.warning(f"加载图片失败: {e}")
+                    logger.warning(f"探测图片失败: {e}")
 
-            if not pil_images:
-                return "❌ 没有有效的图片", None
+            if not probes:
+                return self._danya("multi_fail", err="没有有效的图片"), None
 
-            frames = []
-            # 2. 统一尺寸：保持比例缩放，居中填充
-            for img in pil_images:
-                # 创建透明背景（如果合成JPG可以改为白色背景）
-                bg = PILImage.new("RGBA", (max_w, max_h), (255, 255, 255, 0))
-
-                # 计算缩放比例
-                src_ratio = img.width / img.height
-                tgt_ratio = max_w / max_h
-
-                if src_ratio > tgt_ratio:
-                    # 按照宽度缩放
-                    new_w = max_w
-                    new_h = int(max_w / src_ratio)
+            # 2. 帧数保护：超出上限时按各素材等比抽帧（总时长基本不变）
+            total = sum(len(d) for _, d in probes)
+            plans = []
+            for b, durs in probes:
+                if total > MAX_CONCAT_FRAMES:
+                    allow = max(1, int(len(durs) * MAX_CONCAT_FRAMES / total))
+                    idx, dur = self._decimate_frames(durs, allow)
                 else:
-                    # 按照高度缩放
-                    new_h = max_h
-                    new_w = int(max_h * src_ratio)
+                    idx, dur = list(range(len(durs))), list(durs)
+                plans.append((b, idx, dur))
 
-                # 缩放图片
-                img_resized = img.resize((new_w, new_h), PILImage.Resampling.BILINEAR)
+            # 3. 展开帧 -> 统一画布，按输入顺序连接
+            frames, durations = [], []
+            for b, idx, dur in plans:
+                try:
+                    with PILImage.open(io.BytesIO(b)) as im:
+                        for fi, ms in zip(idx, dur):
+                            im.seek(fi)
+                            frames.append(self._fit_to_canvas(im.convert("RGBA"), canvas_w, canvas_h))
+                            durations.append(ms)
+                except Exception as e:
+                    logger.warning(f"展开图片帧失败: {e}")
 
-                # 居中粘贴
-                paste_x = (max_w - new_w) // 2
-                paste_y = (max_h - new_h) // 2
-                bg.paste(img_resized, (paste_x, paste_y), mask=img_resized if 'A' in img_resized.getbands() else None)
+            if not frames:
+                return self._danya("multi_fail", err="没有可合成的帧"), None
 
-                # 将透明部分处理为白色（对于GIF显示效果更好，或者保留透明）
-                # 这里为了通用性，如果输出GIF，Pillow会自动处理透明度。
-                # 如果希望背景是白色：
-                # final_frame = PILImage.new("RGB", (max_w, max_h), (255, 255, 255))
-                # final_frame.paste(bg, mask=bg.split()[3])
-                frames.append(bg)
-
-            # 3. 保存动画
+            # 4. 保存：GIF 用逐帧时长保留各段原速，APNG/WEBP 退化为平均值
             output = io.BytesIO()
-            duration_ms = int(duration_sec * 1000)
-            self._save_animation(output, frames, duration_ms, loop=0)
+            self._save_animation(output, frames, default_ms, loop=0, durations=durations)
             output.seek(0)
 
-            return self._danya("multi_ok", n=len(frames)), output
+            return self._danya("multi_ok", n=len(probes), f=len(frames), t=sum(durations) / 1000.0), output
 
         except Exception as e:
             return self._danya("multi_fail", err=repr(e)), None
@@ -1565,8 +1630,9 @@ class SpriteToGifPlugin(Star):
     async def multi_img_gif(self, event: AstrMessageEvent):
         """
         多图合成GIF，支持直接发送图片、回复含图消息、转发消息。
+        动图会逐帧展开、按顺序接在后面（沿用各段原速），静态图占一帧。
         用法：多图合成gif [速度/时长]
-        示例：多图合成gif 0.5 (每帧0.5秒)
+        示例：多图合成gif 0.5 (静态图每帧0.5秒；动图沿用原速)
         """
         # 1. 解析参数 (每帧时长)
         msg_text = event.message_str.replace("多图合成gif", "")
@@ -1578,7 +1644,7 @@ class SpriteToGifPlugin(Star):
             try:
                 fps = float(fps_match.group(1))
                 if fps > 0: duration = 1.0 / fps
-            except:
+            except Exception:
                 pass
         else:
             # 尝试匹配秒数 (例如 0.2)
@@ -1587,7 +1653,7 @@ class SpriteToGifPlugin(Star):
                 try:
                     val = float(sec_match.group(1))
                     if 0.01 <= val <= 60: duration = val
-                except:
+                except Exception:
                     pass
 
         async for r in self._emit_text_auto(event, "multi_collecting"):
@@ -1690,8 +1756,6 @@ class SpriteToGifPlugin(Star):
             ("冲",            self.accelerate_gif),
             ("减速",          self.decelerate_gif),
             ("慢",            self.decelerate_gif),
-            ("变快",          self.accelerate_gif),
-            ("变慢",          self.decelerate_gif),
         ]
 
         fn = None
