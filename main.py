@@ -2,7 +2,7 @@
 """娅娅表情处理工具箱（astrbot_plugin_giftoolbox_dania）。
 
 基于 iris1598/astrbot_plugin_gifcaijian 二次风格化改造，提供 GIF/APNG/WebP 的
-裁剪·精灵图合成·分解·变速（倍速/帧率）·倒放·表情包做旧·本地转线稿·多图合成
+裁剪·分解·变速（倍速/帧率）·倒放·表情包做旧·本地转线稿·表情合成
 （支持动图按顺序拼接、沿用各段原速），并集成《鸣潮》达妮娅（娅娅）风格文案
 与 yy / 娅娅 / danya 前缀别名指令。
 
@@ -29,10 +29,9 @@ except ImportError:
 
 
 # --- 达妮娅(娅娅)风格化文案表 ---
-# key -> 默认文案模板。模板内直接写默认昵称「娅娅」；若配置了 danya_name，
-#        _danya() 会在渲染后把文案里的「娅娅」整体替换掉，不必改这几十条模板。
-#        支持 {factor}/{fps}/{n}/{t}/{level}/{fmt}/{nick} 等占位符；找不到 key 则原样返回 key。
-DANYA_NICK_DEFAULT = "娅娅"   # 默认昵称。配置 danya_name 与之不同时触发整体替换
+# key -> 文案模板，昵称固定为「娅娅」，直接写在文案里即可。
+#        支持 {factor}/{fps}/{n}/{t}/{level}/{fmt} 等占位符；找不到 key 则原样返回 key。
+DANYA_NICK = "娅娅"
 
 DANYA_TEXTS = {
     # 通用
@@ -100,27 +99,18 @@ DANYA_TEXTS = {
     "crop_no_image":      "咦？没看到图呀～发张图给娅娅吧～",
     "crop_proc":          "正在切哦……样大小整齐的格子～",
     "crop_image_too_small": "❌ 图太小啦，切不开呢 {crop}",
-    "too_small_grid":     "格子太小啦，{w}×{h} 装不下呢～",
+    "crop_margins_msg":     "\n✂️ 顺手把边切齐啦～上{t} 下{b} 左{l} 右{r}",
+    "crop_margins_invalid": "\n⚠️ 切边设错了呢，{w}×{h} 装不下 {l},{u},{r},{d}～",
+    "crop_margins_err":     "\n⚠️ 切边的时候娅娅手滑了：{err}",
 
-
-    # 合成精灵图
-    "make_proc_mode":     "尝尝娅娅的合成泡泡～算法{mode}，{r}×{c} 每帧 {dur}s",
-    "make_ok_1":          "拼好啦～算法1 | {w}×{h} | {r}行{c}列",
-    "make_ok_2":          "拼好啦～算法2(透明+抖动优化) | {w}×{h} | {r}行{c}列",
-    "make_logic_err":     "合成里有点小乱哦：{err}",
-    "make_crop_msg":      "\n✂️ 切边：上{t} 下{b} 左{l} 右{r}",
-    "make_crop_invalid":  "\n⚠️ 切边设错了：{w}×{h} → {l},{u},{r},{d}",
-    "make_crop_err":      "\n⚠️ 切边出错了：{err}",
-    "make_fail":          "啊……拼不起来：{info}",
-
-    # 多图合成
+    # 表情合成
     "multi_collecting":   "正在收集泡泡～一张张捞起来……",
-    "multi_dl_proc":      "{n} 张都拿到啦，捞起来正在拼～动图按顺序接起来、沿用原速，静图每帧 {dur}s",
+    "multi_dl_proc":      "{n} 张都捞到啦～动图按顺序接起来、沿用原本的速度，静图每帧 {dur}s，正在拼♪",
     "multi_need_more":    "图太少了呀～至少要回复几张图给娅娅哦（合并转发也行）",
     "multi_dl_fail":      "啊……图都下载失败了，要不换个方式再试？",
     "multi_done":         "好啦～拼好了，{n} 张图娅娅都装进泡泡里啦♪",
-    "multi_canvas_hint":  "按顺序接起来～画布自适应、居中填充，温柔对待每张图♪",
-    "multi_ok":           "✅ 合成成功（{n}张 → {f}帧，总时长约 {t:.1f}s，动图沿用原速）",
+    "multi_only_one":    "不过只收到 1 张图呀，一帧是动不起来的～把几张图一起发（或用合并转发）再试试？",
+    "multi_ok":           "接好啦～{n}张连成 {f}帧，总共 {t:.1f}s，动图都按原本的速度在跑♪",
     "multi_fail":         "诶……拼不起来：{err}",
 
     # 表情包做旧
@@ -144,16 +134,17 @@ DANYA_TEXTS = {
                           "3️⃣ 分解：动图拆成一帧帧图片\n"
                           "4️⃣ 裁剪：大图按网格切成小图\n"
                           "5️⃣ 做旧：做成老照片风格\n"
-                          "6️⃣ 精灵图合成：大图按网格切成一串动画\n"
-                          "7️⃣ 线稿：图片转素描\n"
-                          "8️⃣ 多图合成：多张图拼成动图\n"
-                          "9️⃣ 视频转GIF：视频截段转动图\n\n"
-                          "【调用方式】\n"
-                          "· 直接发指令，或加 yy/娅娅 前缀都行\n"
-                          "· 回复图片/动图后发指令即可\n"
+                          "6️⃣ 线稿：图片转素描\n"
+                          "7️⃣ 表情合成：多张表情按顺序接成一条动图\n"
+                          "8️⃣ 视频转GIF：视频截段转动图\n\n"
+                          "【怎么发指令】\n"
+                          "· 直接发指令，或加 yy / 娅娅 / danya 前缀都行\n"
+                          "· 回复图片/动图后再发指令\n"
                           "· 例：加速5倍 / 倒放 / 做旧 10 / 裁剪 3x4 /\n"
-                          "    合成1gif 6x6 0.1 / 多图合成gif 0.5 /\n"
-                          "    视频转gif 0s-5s",
+                          "    表情合成 0.5 / 视频转gif 0s-5s\n\n"
+                          "【表情合成怎么给图】\n"
+                          "· 三种都行：和图一起发、回复含多图的消息、合并转发\n"
+                          "· 至少两张图才会动起来，只给一张娅娅也变不出花样呀～",
 
 # 黑化彩蛋（_worker_age_meme / 倒放 / heavy 倍速抽帧时偶尔出击）
     "dark_echo_1":       "【娅娅·鸣式】…稍微，黑化一点点也没关系吧？",
@@ -163,8 +154,8 @@ DANYA_TEXTS = {
 @register(
     "astrbot_plugin_giftoolbox_dania",
     "xiaoxi2760",
-    "娅娅表情处理工具箱：GIF/APNG/WebP 裁剪·合成·分解·变速(倍速&帧率,支持>50fps抽帧)·倒放·表情包做旧·本地转线稿·多图合成，集成《鸣潮》达妮娅(娅娅)风格文案与别名指令",
-    "1.1.0",
+    "娅娅表情处理工具箱：GIF/APNG/WebP 裁剪·分解·变速(倍速&帧率,支持>50fps抽帧)·倒放·表情包做旧·本地转线稿·表情合成，集成《鸣潮》达妮娅(娅娅)风格文案与别名指令",
+    "1.2.0",
     "https://github.com/xiaoxi2760/astrbot_plugin_giftoolbox_dania",
 )
 class SpriteToGifPlugin(Star):
@@ -172,9 +163,8 @@ class SpriteToGifPlugin(Star):
         super().__init__(context)
         self.cfg = config if config is not None else {}
 
-        # 达妮娅(娅娅)风格昵称，可通过配置 danya_name 自定义，默认「娅娅」。
-        # 影响：所有面向用户的文案、转发节点名。不影响指令前缀（固定为 yy / danya / 娅娅）。
-        self.danya_name = str(self.cfg.get('danya_name') or DANYA_NICK_DEFAULT).strip() or DANYA_NICK_DEFAULT
+        # 达妮娅(娅娅)风格昵称，固定为「娅娅」，不做配置。
+        self.danya_name = DANYA_NICK
 
         if imageio is None:
             logger.warning("插件[astrbot_plugin_giftoolbox_dania]检测到缺少 imageio 库。请运行 pip install imageio[ffmpeg]")
@@ -183,18 +173,15 @@ class SpriteToGifPlugin(Star):
     def _danya(self, key: str, **kw) -> str:
         """
         从 DANYA_TEXTS 取风格化文案并渲染占位符。
-        模板内直接写默认昵称「娅娅」；若配置 danya_name 改了昵称，渲染后整体替换一次。
+        昵称固定为「娅娅」，文案里直接写死即可。
         找不到 key 或渲染异常时，原样返回 key，绝不阻断主流程。
         """
         kw.setdefault('nick', self.danya_name)
         tpl = DANYA_TEXTS.get(key, key)
         try:
-            text = tpl.format(**kw) if ('{' in tpl) else tpl
+            return tpl.format(**kw) if ('{' in tpl) else tpl
         except Exception:
             return key
-        if self.danya_name != DANYA_NICK_DEFAULT:
-            text = text.replace(DANYA_NICK_DEFAULT, self.danya_name)
-        return text
 
     async def _emit_text_auto(self, event: AstrMessageEvent, key: str, stop: bool = False, **kw):
         """统一发送纯文本。自动处理 QQ Official 直发与 yield 回灌。作为 async generator 使用：`async for r in ...: yield r`。"""
@@ -368,8 +355,83 @@ class SpriteToGifPlugin(Star):
                             urls.extend(self._extract_images_from_chain(node.content))
         return urls
 
+    @classmethod
+    def _extract_images_raw(cls, chain) -> list[str]:
+        """从 OneBot 原始 segment 列表抽图片（兼容 data.file / data.url，支持嵌套转发节点）"""
+        urls = []
+        if not isinstance(chain, list):
+            return urls
+        for item in chain:
+            if not isinstance(item, dict):
+                continue
+            if item.get("type") == "image":
+                data = item.get("data") or {}
+                for cand in (data.get("url"), data.get("file"), item.get("url"), item.get("file")):
+                    if isinstance(cand, str) and cand.startswith("http"):
+                        urls.append(cand)
+                        break
+            elif item.get("type") in ("node", "forward"):
+                content = (item.get("data") or {}).get("content") or item.get("content")
+                urls.extend(cls._extract_images_raw(content))
+        return urls
+
+    async def _fetch_images_via_api(self, event: AstrMessageEvent) -> list[str]:
+        """
+        通过 OneBot API 补齐图片：被回复的消息、合并转发里的图。
+        这些在当前消息链里通常只有一个引用 ID，拿不到内容，必须回查。
+        平台不支持时静默返回空列表，不影响原有逻辑。
+        """
+        urls = []
+        call_action = getattr(getattr(getattr(event, "bot", None), "api", None), "call_action", None)
+        if not callable(call_action):
+            return urls
+        chain = getattr(getattr(event, "message_obj", None), "message", None) or []
+
+        msg_ids, forward_ids = [], []
+        for seg in chain:
+            if isinstance(seg, dict):
+                stype = seg.get("type")
+                data = seg.get("data") or {}
+                if stype == "reply":
+                    mid = data.get("id") or data.get("message_id")
+                    if mid and str(mid).strip().isdigit():
+                        msg_ids.append(str(mid).strip())
+                elif stype == "forward":
+                    fid = data.get("id")
+                    if fid:
+                        forward_ids.append(str(fid))
+            elif isinstance(seg, Comp.Reply):
+                mid = getattr(seg, "id", None) or getattr(seg, "message_id", None)
+                if mid and str(mid).strip().isdigit():
+                    msg_ids.append(str(mid).strip())
+
+        async def _call(action, **params):
+            try:
+                return await call_action(action, **params)
+            except Exception as e:
+                logger.debug(f"{action} 调用失败: {type(e).__name__}: {e}")
+                return None
+
+        for mid in dict.fromkeys(msg_ids):
+            ret = await _call("get_msg", message_id=int(mid))
+            if not isinstance(ret, dict):
+                continue
+            data = ret.get("data") if isinstance(ret.get("data"), dict) else ret
+            urls.extend(self._extract_images_raw(data.get("message")))
+
+        for fid in dict.fromkeys(forward_ids):
+            ret = await _call("get_forward_msg", id=fid) or await _call("get_forward_msg", message_id=fid)
+            if not isinstance(ret, dict):
+                continue
+            data = ret.get("data") if isinstance(ret.get("data"), dict) else ret
+            nodes = data.get("messages") or data.get("nodes") or []
+            for node in nodes:
+                if isinstance(node, dict):
+                    urls.extend(self._extract_images_raw(node.get("content") or node.get("message")))
+        return urls
+
     async def _get_all_image_urls(self, event: AstrMessageEvent) -> list[str]:
-        """获取上下文中所有的图片链接（包括当前消息、回复的消息、转发消息、At头像）"""
+        """获取上下文中所有的图片链接（当前消息、回复的消息、转发消息、At头像）"""
         urls = []
 
         # 1. 检查 event.message_obj.message
@@ -383,14 +445,11 @@ class SpriteToGifPlugin(Star):
                 if img.url and img.url not in urls:
                     urls.append(img.url)
         
-        # 3. 补充 At 头像
-        if hasattr(event.message_obj, "message"):
-            for seg in event.message_obj.message:
-                if isinstance(seg, Comp.At):
-                    uid = str(seg.qq)
-                    url = f"https://q1.qlogo.cn/g?b=qq&nk={uid}&s=640"
-                    if url not in urls:
-                        urls.append(url)
+        # 3. 补充：回查被回复的消息 / 合并转发里的图（当前链里通常只有引用 ID）
+        try:
+            urls.extend(await self._fetch_images_via_api(event))
+        except Exception as e:
+            logger.warning(f"回查引用消息失败: {type(e).__name__}: {e}")
 
         # 去重但保持顺序
         seen = set()
@@ -751,12 +810,12 @@ class SpriteToGifPlugin(Star):
             img = PILImage.open(io.BytesIO(img_data)).convert("RGBA")
             w, h = img.size
             l, u, r, d = margins['left'], margins['top'], w - margins['right'], h - margins['bottom']
-            if l >= r or u >= d: return img_data, self._danya("make_crop_invalid", w=w, h=h, l=l, u=u, r=r, d=d)
+            if l >= r or u >= d: return img_data, self._danya("crop_margins_invalid", w=w, h=h, l=l, u=u, r=r, d=d)
             output = io.BytesIO()
             img.crop((l, u, r, d)).save(output, format='PNG')
-            return output.getvalue(), self._danya("make_crop_msg", t=margins['top'], b=margins['bottom'], l=margins['left'], r=margins['right'])
+            return output.getvalue(), self._danya("crop_margins_msg", t=margins['top'], b=margins['bottom'], l=margins['left'], r=margins['right'])
         except Exception as e:
-            return img_data, self._danya("make_crop_err", err=e)
+            return img_data, self._danya("crop_margins_err", err=e)
 
     async def _download_image(self, url: str) -> bytes:
         """下载图片/动图。支持 HTTP URL 和本地文件路径。"""
@@ -771,106 +830,6 @@ class SpriteToGifPlugin(Star):
             except Exception as e:
                 logger.error(f"_download_image 下载失败: {url} -> {type(e).__name__}: {e}")
                 return None
-
-    async def _handle_gif_task(self, event: AstrMessageEvent, algorithm_mode: int):
-        msg_text = event.message_str
-        clean_text, margins = self._parse_margins(msg_text)
-        clean_text = clean_text.replace("合成1gif", "").replace("合成2gif", "").replace("合成gif", "")
-        rows, cols, duration = 6, 6, 0.1
-        grid_match = re.search(r'(\d+)\s*[*x×]\s*(\d+)', clean_text)
-        if grid_match:
-            rows, cols = int(grid_match.group(1)), int(grid_match.group(2))
-            clean_text = clean_text.replace(grid_match.group(0), " ")
-        dur_match = re.search(r'(\d+(?:\.\d+)?)', clean_text)
-        if dur_match:
-            try:
-                val = float(dur_match.group(1))
-                if 0 < val <= 60: duration = val
-            except Exception:
-                pass
-        img_url = self._get_image_url(event)
-        if not img_url:
-            async for r in self._emit_text_auto(event, "need_image", stop=True):
-                yield r
-            return
-        async for r in self._emit_text_auto(event, "make_proc_mode", mode=algorithm_mode, r=rows, c=cols, dur=duration):
-            yield r
-        img_data = await self._download_image(img_url)
-        if not img_data:
-            async for r in self._emit_text_auto(event, "image_dl_fail", stop=True):
-                yield r
-            return
-        img_data, crop_msg = await asyncio.to_thread(self._crop_image_data, img_data, margins)
-        func = self.process_mode_1 if algorithm_mode == 1 else self.process_mode_2
-        res_msg, gif_bytes = await asyncio.to_thread(func, img_data, rows, cols, duration)
-        if gif_bytes:
-            async for r in self._emit_result_auto(event, res_msg + crop_msg, gif_bytes.getvalue(), stop=True):
-                yield r
-        else:
-            async for r in self._emit_text_auto(event, "make_fail", info=res_msg, stop=True):
-                yield r
-
-    @filter.command("合成1gif")
-    async def make_gif_v1(self, event: AstrMessageEvent):
-        async for res in self._handle_gif_task(event, 1): yield res
-
-    @filter.command("合成2gif")
-    async def make_gif_v2(self, event: AstrMessageEvent):
-        async for res in self._handle_gif_task(event, 2): yield res
-
-    def process_mode_1(self, img_data: bytes, rows: int, cols: int, duration_sec: float):
-        try:
-            img = PILImage.open(io.BytesIO(img_data))
-            if getattr(img, "is_animated", False): img.seek(0)
-            img = img.convert("RGBA")
-            w, h = img.size
-            cw, ch = w // cols, h // rows
-            if cw < 2 or ch < 2: return self._danya("too_small_grid", w=cw, h=ch), None
-            frames = []
-            for r in range(rows):
-                for c in range(cols):
-                    frames.append(img.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch)))
-            output = io.BytesIO()
-            self._save_animation(output, frames, int(duration_sec * 1000), loop=0)
-            output.seek(0)
-            return self._danya("make_ok_1", w=w, h=h, r=rows, c=cols), output
-        except Exception as e:
-            return self._danya("make_logic_err", err=e), None
-
-    def process_mode_2(self, img_data: bytes, rows: int, cols: int, duration_sec: float):
-        try:
-            img = PILImage.open(io.BytesIO(img_data))
-            if getattr(img, "is_animated", False): img.seek(0)
-            img = img.convert("RGBA")
-            datas = img.getdata()
-            new_data = [(0, 0, 0, 0) if item[3] < 128 else (item[0], item[1], item[2], 255) for item in datas]
-            img.putdata(new_data)
-            has_trans = any(d[3] == 0 for d in new_data)
-            master_pal = img.convert("RGB").quantize(colors=255 if has_trans else 256, method=1)
-            w, h = img.size
-            cw, ch = w // cols, h // rows
-            if cw < 2 or ch < 2: return self._danya("too_small_grid", w=cw, h=ch), None
-            frames = []
-            for r in range(rows):
-                for c in range(cols):
-                    crop = img.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch))
-                    frame = crop.convert("RGB").quantize(palette=master_pal)
-                    if has_trans:
-                        mask = crop.split()[3].point(lambda a: 255 if a < 128 else 0)
-                        frame.paste(255, mask=mask)
-                    frames.append(frame)
-            output = io.BytesIO()
-            fmt = self.cfg.get('output_format', 'GIF').upper()
-            if fmt == 'GIF':
-                frames[0].save(output, format='GIF', save_all=True, append_images=frames[1:],
-                               duration=int(duration_sec * 1000), loop=0, disposal=2,
-                               transparency=255 if has_trans else None, optimize=True)
-            else:
-                self._save_animation(output, frames, int(duration_sec * 1000), loop=0)
-            output.seek(0)
-            return self._danya("make_ok_2", w=w, h=h, r=rows, c=cols), output
-        except Exception as e:
-            return self._danya("make_logic_err", err=e), None
 
     # --- 统一变速处理逻辑 (v2: 支持倍速/帧率两种模式, fps>50自动抽帧) ---
     async def _handle_speed(self, event: AstrMessageEvent, value: float, is_fps_mode: bool, action_hint: str = "变速"):
@@ -1309,7 +1268,7 @@ class SpriteToGifPlugin(Star):
         except Exception as e:
             return self._danya("reverse_fail", err=e), None
 
-    # --- 多图合成 GIF 辅助: 取当前帧自身时长(ms) ---
+    # --- 表情合成 辅助: 取当前帧自身时长(ms) ---
     @staticmethod
     def _frame_duration_ms(img: PILImage.Image, default_ms: int) -> int:
         """读当前帧原本的时长；缺失/非法时回落到 default_ms，并收敛到 [20ms, 10s]。"""
@@ -1321,7 +1280,7 @@ class SpriteToGifPlugin(Star):
             d = default_ms
         return max(20, min(d, 10000))
 
-    # --- 多图合成 GIF 辅助: 等比缩放 + 居中透明填充到统一画布 ---
+    # --- 表情合成 辅助: 等比缩放 + 居中透明填充到统一画布 ---
     @staticmethod
     def _fit_to_canvas(img: PILImage.Image, canvas_w: int, canvas_h: int) -> PILImage.Image:
         bg = PILImage.new("RGBA", (canvas_w, canvas_h), (255, 255, 255, 0))
@@ -1336,7 +1295,7 @@ class SpriteToGifPlugin(Star):
                  mask=img_resized if 'A' in img_resized.getbands() else None)
         return bg
 
-    # --- 多图合成 GIF 辅助: 帧数超限时按素材等比抽帧，被丢帧的时长并入保留帧(总时长不变) ---
+    # --- 表情合成 辅助: 帧数超限时按素材等比抽帧，被丢帧的时长并入保留帧(总时长不变) ---
     @staticmethod
     def _decimate_frames(durations: list, max_frames: int):
         n = len(durations)
@@ -1357,10 +1316,10 @@ class SpriteToGifPlugin(Star):
             pos += step
         return keep_idx, keep_dur
 
-    # --- 新增: 多图合成 GIF 核心处理逻辑(支持动图按顺序拼接) ---
+    # --- 表情合成 核心处理逻辑(动图按顺序拼接) ---
     def _worker_multi_image_gif(self, images_bytes: list[bytes], duration_sec: float):
         """
-        多图合成GIF：
+        表情合成：
         - 静态图 -> 占 1 帧，时长取指令给的 duration_sec
         - 动图   -> 逐帧展开后接在后面，沿用各帧原本的时长（原速）
         所有帧统一到最大画布（等比缩放 + 居中透明填充），严格按输入顺序连接。
@@ -1637,16 +1596,17 @@ class SpriteToGifPlugin(Star):
             if not await self._emit_text(event, res_msg, stop=True):
                 yield event.plain_result(res_msg)
 
-    @filter.command("多图合成gif")
+    @filter.command("表情合成")
     async def multi_img_gif(self, event: AstrMessageEvent):
         """
-        多图合成GIF，支持直接发送图片、回复含图消息、转发消息。
+        表情合成：把多张表情/动图按顺序接成一条动图。
+        支持直接发送图片、回复含图消息、转发消息。
         动图会逐帧展开、按顺序接在后面（沿用各段原速），静态图占一帧。
-        用法：多图合成gif [速度/时长]
-        示例：多图合成gif 0.5 (静态图每帧0.5秒；动图沿用原速)
+        用法：表情合成 [速度/时长]
+        示例：表情合成 0.5 (静态图每帧0.5秒；动图沿用原速)
         """
         # 1. 解析参数 (每帧时长)
-        msg_text = event.message_str.replace("多图合成gif", "")
+        msg_text = event.message_str.replace("表情合成", "")
         duration = 0.5  # 默认0.5秒
 
         # 尝试匹配 fps (例如 10fps) -> 转为 duration
@@ -1695,7 +1655,13 @@ class SpriteToGifPlugin(Star):
         res_msg, gif_io = await asyncio.to_thread(self._worker_multi_image_gif, valid_bytes, duration)
 
         if gif_io:
-            async for r in self._emit_result_auto(event, self._danya("multi_done", n=len(valid_bytes)) + "\n" + self._danya("multi_canvas_hint") + "\n" + res_msg, gif_io.getvalue(), stop=True):
+            # 只收到一张图时给个提示，否则用户会以为合成坏了（一帧当然不会动）
+            head = self._danya("multi_done", n=len(valid_bytes))
+            if len(valid_bytes) < 2:
+                head += "\n" + self._danya("multi_only_one")
+            # split_mb=0 → 强制「先文本、后纯图片」两条消息：QQ 图文混排会把动图当静态图
+            async for r in self._emit_result_auto(event, head + "\n" + res_msg, gif_io.getvalue(),
+                                                  stop=True, split_mb=0):
                 yield r
         else:
             if not await self._emit_text(event, res_msg, stop=True):
@@ -1704,7 +1670,7 @@ class SpriteToGifPlugin(Star):
     # --- 表情包帮助 ---
     @filter.regex(r"^表情包?帮助\s*$")
     async def expression_help(self, event: AstrMessageEvent):
-        """表情包相关指令帮助：做旧 / 多图合成 / 精灵图合成 / 裁剪。"""
+        """表情包相关指令帮助：做旧 / 表情合成 / 裁剪。"""
         async for r in self._emit_text_auto(event, "help_expression", stop=True):
             yield r
 
@@ -1719,10 +1685,8 @@ class SpriteToGifPlugin(Star):
     #   yy裁剪 3x4 / 娅娅裁剪 3x4 边距10
     #   yy视频转gif 1s-3s 0.5
     #   yy图片转线稿
-    #   yy合成1gif 8x8 0.05
-    #   yy合成2gif 8x8 0.05
     #   yy做旧 10 / 娅娅把它做古 10
-    #   yy多图合成gif 0.5
+    #   yy表情合成 0.5
     @filter.regex(r"^(?:yy|娅娅|danya)\s*(\S.*)$")
     async def danya_alias_dispatcher(self, event: AstrMessageEvent):
         """统一处理 yy/娅娅/danya 前缀的达妮娅风格别名，路由到对应 handler。"""
@@ -1743,13 +1707,8 @@ class SpriteToGifPlugin(Star):
             ("图片转线稿",     self.img_to_line_art),
             ("画线稿",        self.img_to_line_art),
             # 合成
-            ("多图合成gif",   self.multi_img_gif),
-            ("多图合成",       self.multi_img_gif),
+            ("表情合成",       self.multi_img_gif),
             ("表情包做旧",     self.age_meme),
-            ("合成1gif",      self.make_gif_v1),
-            ("合成1",        self.make_gif_v1),
-            ("合成2gif",      self.make_gif_v2),
-            ("合成2",        self.make_gif_v2),
             # 分解/倒放
             ("gif分解",       self.decompose_gif),
             ("gif倒放",       self.gif_reverse),
